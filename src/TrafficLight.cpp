@@ -1,8 +1,8 @@
 /*
-    Arduino Pedestrian Traffic Light v1.0
+    Arduino Pedestrian Traffic Light v2.0
     
-    This version of the pedestrian traffic light loops through the traffic
-    light pattern continuously.
+    This version of the pedestrian traffic light is triggered by
+    a push button and sounds a continuous beep for blind pedestrians.
     
     Author: Claus Niesen
     https://github.com/cniesen/ArduinoPedestrianTrafficLight
@@ -11,85 +11,115 @@
 #include "TrafficLight.h"
 #include "Arduino.h"
 
-TrafficLight::TrafficLight(int redLightInputPin, int greenLightInputPin, Signal signalState) {
-    this->redLightInputPin = redLightInputPin;
-    this->yellowLightInputPin = NULL;
-    this->greenLightInputPin = greenLightInputPin;
-    if ((signalState == YELLOW) || (signalState == RED_YELLOW)) {
+TrafficLight::TrafficLight(int redLightPin, int yellowLightPin, int greenLightPin, Signal signalState) {
+    this->redLightPin = redLightPin;
+    this->yellowLightPin = yellowLightPin;
+    this->greenLightPin = greenLightPin;
+    if (yellowLightPin == NULL
+        && ((signalState == YELLOW) || (signalState == RED_YELLOW))) {
         this->signalState = RED;
-    } 
-    else {
+    } else {
         this->signalState = signalState;
     }
+    this->buzzerPin = NULL;
 
-    pinMode(redLightInputPin, OUTPUT);     
-    pinMode(greenLightInputPin, OUTPUT);    
+    pinMode(redLightPin, OUTPUT); 
+    if (yellowLightPin != NULL) {
+        pinMode(yellowLightPin, OUTPUT);     
+    }
+    pinMode(greenLightPin, OUTPUT);    
+
+
+    switch(signalState) {
+        case RED :
+            switchSignalToRed();
+            break;
+        case RED_YELLOW :
+            switchSignalToRedYellow();
+            break;
+        case GREEN :
+            switchSignalToGreen();
+            break;
+        case YELLOW :
+            switchSignalToYellow();
+            break;
+    }
 }
 
-TrafficLight::TrafficLight(int redLightInputPin, int yellowLightInputPin, int greenLightInputPin, Signal signalState) {
-    this->redLightInputPin = redLightInputPin;
-    this->yellowLightInputPin = yellowLightInputPin;
-    this->greenLightInputPin = greenLightInputPin;
-    this->signalState = signalState;
-
-    pinMode(redLightInputPin, OUTPUT);     
-    pinMode(yellowLightInputPin, OUTPUT);     
-    pinMode(greenLightInputPin, OUTPUT);    
+void TrafficLight::enableAlert(int buzzerPin) {
+    this->buzzerPin = buzzerPin;
+    pinMode(buzzerPin, OUTPUT);
 }
 
 void TrafficLight::switchSignalToRedYellow() {
-    if ((yellowLightInputPin == NULL) || (signalStandard == USA)) {
+    if ((yellowLightPin == NULL) || (signalStandard == USA)) {
         switchSignalToRed();
         return;
     }
 
-    digitalWrite(redLightInputPin, HIGH);
-    digitalWrite(yellowLightInputPin, HIGH);
-    digitalWrite(greenLightInputPin, LOW);
+    digitalWrite(redLightPin, HIGH);
+    digitalWrite(yellowLightPin, HIGH);
+    digitalWrite(greenLightPin, LOW);
+    if (buzzerPin != NULL) {
+        digitalWrite(buzzerPin, LOW);
+    }
 }
 
 void TrafficLight::switchSignalToGreen() {
-    digitalWrite(redLightInputPin, LOW);
-    digitalWrite(yellowLightInputPin, LOW);
-    digitalWrite(greenLightInputPin, HIGH);
+    digitalWrite(redLightPin, LOW);
+    if (yellowLightPin != NULL) {
+        digitalWrite(yellowLightPin, LOW);
+    }
+    digitalWrite(greenLightPin, HIGH);
+    if (buzzerPin != NULL) {
+        digitalWrite(buzzerPin, HIGH);
+    }
 }
 
 void TrafficLight::switchSignalToYellow() {
-    if (yellowLightInputPin == NULL) {
+    if (yellowLightPin == NULL) {
         switchSignalToRed();
         return;
     }
 
-    digitalWrite(redLightInputPin, LOW);
-    digitalWrite(yellowLightInputPin, HIGH);
-    digitalWrite(greenLightInputPin, LOW);
+    digitalWrite(redLightPin, LOW);
+    digitalWrite(yellowLightPin, HIGH);
+    digitalWrite(greenLightPin, LOW);
+    if (buzzerPin != NULL) {
+        digitalWrite(buzzerPin, LOW);
+    }
 }
 
 void TrafficLight::switchSignalToRed() {
-    digitalWrite(redLightInputPin, HIGH);
-    digitalWrite(yellowLightInputPin, LOW);
-    digitalWrite(greenLightInputPin, LOW);
+    digitalWrite(redLightPin, HIGH);
+    if (yellowLightPin != NULL) {
+        digitalWrite(yellowLightPin, LOW);
+    }
+    digitalWrite(greenLightPin, LOW);
+    if (buzzerPin != NULL) {
+        digitalWrite(buzzerPin, LOW);
+    }
 }
 
 void TrafficLight::switchSignal() {
     switch(signalState) {
-    case RED :
-        switchSignalToRedYellow();
-        signalState = RED_YELLOW;
-        break;
-    case RED_YELLOW :
-        switchSignalToGreen();
-        signalState = GREEN;
-        break;
-    case GREEN :
-        switchSignalToYellow();
-        signalState = YELLOW;
-        break;
-    case YELLOW :
-        switchSignalToRed();
-        signalState = RED;
-        break;
-    }
+        case RED :
+            switchSignalToRedYellow();
+            signalState = RED_YELLOW;
+            break;
+        case RED_YELLOW :
+            switchSignalToGreen();
+            signalState = GREEN;
+            break;
+        case GREEN :
+            switchSignalToYellow();
+            signalState = YELLOW;
+            break;
+        case YELLOW :
+            switchSignalToRed();
+            signalState = RED;
+            break;
+        }
 }
 
 
